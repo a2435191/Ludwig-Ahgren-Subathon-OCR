@@ -101,6 +101,7 @@ class LudVideo():
             if self.get_frames_done and self._q.empty():
                 break
             idx, frame = self._q.get(True)
+            print(self._q.qsize())
             self.last_frame = LudFrame(frame, self.record_ims)
 
             raw_ocr_string = self.ocr_frame()
@@ -133,6 +134,6 @@ class LudVideo():
 
 
 if __name__ == '__main__':
-    lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'test_data.csv', record_ims=True)
+    lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'example_data.csv', record_ims=True)
     lv.go()
     
