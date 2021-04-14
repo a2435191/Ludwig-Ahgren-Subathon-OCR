@@ -5,6 +5,7 @@ __doc__ = """
 """
 
 import re
+import os
 from datetime import datetime
 from math import isclose
 from typing import Iterable, Optional
@@ -20,12 +21,21 @@ class CroppedOcrError(Exception):
 class TimeStringParsingError(Exception):
     pass
 
+
+
 class LudFrame():
     TIME_REGEX = re.compile(r'(\d{1,2})[:\.]?(\d{2})[:\.]?(\d{2})')
+    
 
-    def __init__(self, arr: np.ndarray):
+    def __init__(self, arr: np.ndarray, record_ims=False):
+        self.record_ims = record_ims
         self.img = arr
-        cv2.imwrite("full.png", arr)
+        
+        self._write("image.png", arr)
+        
+    def _write(self, name, im):
+        if self.record_ims:
+            cv2.imwrite(os.path.join("demo_images", name), im)
 
     def get_ts(self) -> Optional[int]:
         x, y, wid, hei = self.get_cropped()
@@ -47,8 +57,8 @@ class LudFrame():
         timestamp = 60 * 60 * int(hour) + 60 * int(minute) + int(second)
         return timestamp, ":".join(res[0])
 
-    @staticmethod
-    def get_str_from_cropped(cropped: np.ndarray) -> str:
+    
+    def get_str_from_cropped(self, cropped: np.ndarray) -> str:
         """
         Convert a cropped image to a timestamp-convertible string.
         grayscale -> otsu threshold -> erosion -> inversion -> tesseract OCR
@@ -64,25 +74,12 @@ class LudFrame():
         except cv2.error:
             raise CroppedOcrError
         
-        cv2.imwrite('grayscale.png', grayscale)
+        self._write('grayscale.png', grayscale)
         thresh = 80
         grayscale[grayscale <  thresh] = 0 # TODO
         grayscale[grayscale >= thresh] = 255
         black_white = grayscale
-        cv2.imwrite('black_white.png', black_white)
-
-        """
-        kernel_size = int( (im_size**0.5)/50 )
-        if kernel_size == 0:
-            erosion = black_white
-        else:
-            if kernel_size < 3:
-                kernel_size = 2
-            kernel = np.ones((kernel_size, kernel_size),np.uint8)
-            erosion = cv2.erode(black_white, kernel)
-        
-        cv2.imwrite('erosion.png', erosion)
-        """
+        self._write('black_white.png', black_white)
         
         
         # https://stackoverflow.com/questions/42798659/how-to-remove-small-connected-objects-using-opencv
@@ -93,10 +90,10 @@ class LudFrame():
         for i, size in enumerate(sizes):
             if size >= min_area_thresh:
                 filtered[output == i + 1] = 255
-        cv2.imwrite('filtered.png', filtered)
+        self._write('filtered.png', filtered)
 
         inverted = cv2.bitwise_not(filtered)
-        cv2.imwrite('inverted.png', inverted)
+        self._write('inverted.png', inverted)
         string = pytesseract.image_to_string(inverted, 'eng')
         return string
 
@@ -120,12 +117,12 @@ class LudFrame():
         min_color, max_color = color - color_threshold, color + color_threshold
         mask = cv2.inRange(self.img, min_color, max_color)
 
-        cv2.imwrite('mask.png', mask)
+        self._write('mask.png', mask)
         canny = cv2.Canny(mask, 127, 255)
-        cv2.imwrite('canny.png', canny)
+        self._write('canny.png', canny)
         
         closed = cv2.morphologyEx( canny, cv2.MORPH_DILATE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_close_len,morph_close_len)) )
-        cv2.imwrite('closed.png', closed)
+        self._write('closed.png', closed)
         contours, _ = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         approx_contours = [cv2.approxPolyDP(c, 0.1 * cv2.arcLength(c, True), True) for c in contours]
 
@@ -164,6 +161,6 @@ if __name__ == '__main__':
     #cap.set(1, 61320-1)
     #_, frame = cap.read()
     print(
-        LudFrame(cv2.imread('tests/test_images/69:09:34.png')).get_ts()
+        LudFrame(cv2.imread('tests/test_images/69:09:34.png'), True).get_ts()
     )
 
