@@ -4,8 +4,8 @@ __doc__ = """
     Process a single frame of the stream and get the timer value.
 """
 
-import re
 import os
+import re
 from datetime import datetime
 from math import isclose
 from typing import Iterable, Optional
