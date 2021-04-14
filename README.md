@@ -9,3 +9,12 @@
 * This takes a while— even though the streaming and processing are done in separate threads, I only got around 2 frames analyzed per second.
 * For this reason, only a sample `.csv` file is included in the project. The source is [this vod](https://www.youtube.com/watch?v=UzHtbjtT8hE).
 * Pull requests from people with good Internet are always appreciated!
+
+## TODO
+* Unscuff `video_timestamp` column
+* Add propper `logging` support
+* Make OCR more reliable— right now it is only XX%. This is my first project using OpenCV, so I'd appreciate any help.
+* Use literally any other file format than csv
+* More threads/processes— the program is usually *not* bound by network IO
+* Write more tests
+* Add readme/wiki detailing image processing algorithms
