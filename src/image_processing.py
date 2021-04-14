@@ -56,7 +56,7 @@ class LudFrame():
     def get_str_from_cropped(self) -> str:
         """
         Convert a cropped image to a timestamp-convertible string.
-        grayscale -> otsu threshold -> erosion -> inversion -> tesseract OCR
+        grayscale -> threshold -> filter out small shapes -> inversion -> tesseract OCR
         """
         if self.cropped is None:
             raise CroppedOcrError
@@ -118,8 +118,9 @@ class LudFrame():
         canny = cv2.Canny(mask, 127, 255)
         self._write('canny.png', canny)
         
-        closed = cv2.morphologyEx( canny, cv2.MORPH_DILATE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_close_len,morph_close_len)) )
+        closed = cv2.dilate(canny, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_close_len,morph_close_len)))
         self._write('closed.png', closed)
+        
         contours, _ = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         approx_contours = [cv2.approxPolyDP(c, 0.1 * cv2.arcLength(c, True), True) for c in contours]
 
