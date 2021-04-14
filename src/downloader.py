@@ -11,7 +11,9 @@ from image_processing import CroppedOcrError, LudFrame, TimeStringParsingError
 
 
 class LudVideo():
-    def __init__(self, url, prev_frame=0):
+    def __init__(self, url, dest, start_at_frame=0, record_ims=False):
+        self.record_ims = record_ims
+        self.dest = dest
         self.url = url
         self._q = Queue()
         self.get_frames_done = False
@@ -25,13 +27,12 @@ class LudVideo():
                 break
 
         self.capture = cv2.VideoCapture(self.stream.url)
-        self.prev_frame = prev_frame
+        self.prev_frame = start_at_frame
         if self.prev_frame > 30:
             self.capture.set(1, (self.prev_frame//30 * 30 + 29))
         self.fps = self.capture.get(cv2.CAP_PROP_FPS)
 
-        self.x, self.y, self.w, self.h = [0, 0, 0, 0] # x, y, w, h for crop box
-        self.csv = pandas.read_csv('data.csv', index_col=['vid_url', 'frame'])
+        self.df = pandas.read_csv(self.dest, index_col=['vid_url', 'frame'])
         self.last_frame = None
 
         
@@ -61,26 +62,24 @@ class LudVideo():
         self.capture.release()
         print('done with get_frames')
 
-    def crop(self, frame):
-        return frame[self.y:self.y+self.h, self.x:self.x+self.w]
 
     def recalculate_bbox(self, frame=None):
         if frame is None:
             frame = self.last_frame
         if frame is None:
             return
-        self.x, self.y, self.w, self.h = LudFrame(frame).get_cropped()
+        frame.update_bbox()
+        frame.crop()
 
 
-    def ocr_frame(self, frame, recurse=False):
-        cropped = self.crop(frame)
+    def ocr_frame(self, recurse=False):
         try:
-            formatted_string = LudFrame.get_str_from_cropped(cropped)
+            formatted_string = self.last_frame.get_str_from_cropped()
         except CroppedOcrError:
             if recurse:
                 return ""
-            self.recalculate_bbox()
-            formatted_string = self.ocr_frame(frame, True)
+            self.last_frame.update_bbox()
+            formatted_string = self.ocr_frame(True)
                 
         return formatted_string
 
@@ -90,8 +89,8 @@ class LudVideo():
         except TimeStringParsingError:
             if recurse:
                 return -1, ""
-            self.recalculate_bbox()
-            ts, string = self.format_from_str(self.ocr_frame(self.last_frame, True), True)
+            self.last_frame.update_bbox()
+            ts, string = self.format_from_str(self.ocr_frame(True), True)
 
         return ts, string
 
@@ -101,20 +100,19 @@ class LudVideo():
         while True:
             if self.get_frames_done and self._q.empty():
                 break
-            idx, self.last_frame = self._q.get(True)
+            idx, frame = self._q.get(True)
+            self.last_frame = LudFrame(frame, self.record_ims)
 
-            cv2.imwrite("image.png", self.last_frame)
-
-            raw_ocr_string = self.ocr_frame(self.last_frame)
+            raw_ocr_string = self.ocr_frame()
             ts, string = self.format_from_str(raw_ocr_string)
 
             raw_seconds = idx / self.fps
-            hour = raw_seconds // 3600
-            seconds = raw_seconds % 60
-            minutes = raw_seconds // 60
+            hour = int(raw_seconds // 3600)
+            seconds = int(raw_seconds % 60)
+            minutes = int((raw_seconds // 60) % 60)
 
-            self.csv.loc[(self.url, idx), :] = [f"{hour}:{minutes}:{seconds}", ts, string]
-            self.csv.to_csv('data.csv')
+            self.df.loc[(self.url, idx), :] = [f"{hour:03}:{minutes:02}:{seconds:02}", ts, string]
+            self.df.to_csv(self.dest)
 
             os.system('clear')
             print((idx // self.fps / self.length) * 100, "pct. complete")
@@ -135,6 +133,6 @@ class LudVideo():
 
 
 if __name__ == '__main__':
-    lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 991650)
+    lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'test_data.csv', record_ims=True)
     lv.go()
     

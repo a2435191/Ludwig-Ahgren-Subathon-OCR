@@ -27,23 +27,18 @@ class LudFrame():
     TIME_REGEX = re.compile(r'(\d{1,2})[:\.]?(\d{2})[:\.]?(\d{2})')
     
 
-    def __init__(self, arr: np.ndarray, record_ims=False):
+    def __init__(self, arr: np.ndarray, record_ims=False, bbox=None):
         self.record_ims = record_ims
         self.img = arr
-        
+        self.bbox = bbox # [x, y, w, h]
+        self.cropped = None
         self._write("image.png", arr)
+
+
         
     def _write(self, name, im):
         if self.record_ims:
             cv2.imwrite(os.path.join("demo_images", name), im)
-
-    def get_ts(self) -> Optional[int]:
-        x, y, wid, hei = self.get_cropped()
-        cropped = self.img[y:y+hei, x:x+wid]
-        string = self.get_str_from_cropped(cropped)
-
-        ts = self.get_timestamp_from_str(string)
-        return ts
 
 
     @classmethod
@@ -58,19 +53,22 @@ class LudFrame():
         return timestamp, ":".join(res[0])
 
     
-    def get_str_from_cropped(self, cropped: np.ndarray) -> str:
+    def get_str_from_cropped(self) -> str:
         """
         Convert a cropped image to a timestamp-convertible string.
         grayscale -> otsu threshold -> erosion -> inversion -> tesseract OCR
         """
+        if self.cropped is None:
+            raise CroppedOcrError
 
-        im_size = cropped.shape[0] * cropped.shape[1]
-        min_area_thresh = (im_size)**0.5 / 10
+        im_size = self.cropped.shape[0] * self.cropped.shape[1]
+        min_area_thresh = (im_size)**0.5 / 2
+        print(min_area_thresh)
         if min_area_thresh < 12:
             min_area_thresh = 4
         
         try:
-            grayscale = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+            grayscale = cv2.cvtColor(self.cropped, cv2.COLOR_BGR2GRAY)
         except cv2.error:
             raise CroppedOcrError
         
@@ -97,7 +95,7 @@ class LudFrame():
         string = pytesseract.image_to_string(inverted, 'eng')
         return string
 
-    def get_cropped(
+    def update_bbox(
         self,
         color: Iterable[int] = [67, 12, 21], 
         color_threshold: int = 15,
@@ -105,7 +103,7 @@ class LudFrame():
         min_area_factor: float = 0.01,
         morph_close_len: int = 3,
         border_width: int = 5
-        ) -> Optional[Iterable[int]]:
+        ):
 
         """
         Get the timer portion of the frame.
@@ -148,7 +146,16 @@ class LudFrame():
                 best_bounding_box = rect
                 best_peri_deviance = abs(cont_peri - box_peri) / box_peri
 
-        return best_bounding_box
+        self.bbox = best_bounding_box
+        self.crop()
+        return self.bbox
+        
+
+    def crop(self, bounding_box=None):
+        bbox = bounding_box if bounding_box else self.bbox
+        x, y, w, h = bbox
+        self.cropped = self.img[y:y+h, x:x+w]
+    
 
 
 
@@ -160,7 +167,10 @@ if __name__ == '__main__':
     #cap = cv2.VideoCapture(stream.url)
     #cap.set(1, 61320-1)
     #_, frame = cap.read()
-    print(
-        LudFrame(cv2.imread('tests/test_images/69:09:34.png'), True).get_ts()
-    )
+
+    lf = LudFrame(cv2.imread('demo_images/image.png'), True)
+    print(lf.update_bbox())
+    print(lf.get_str_from_cropped())
+    
+
 
