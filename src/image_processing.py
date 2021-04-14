@@ -63,7 +63,6 @@ class LudFrame():
 
         im_size = self.cropped.shape[0] * self.cropped.shape[1]
         min_area_thresh = (im_size)**0.5 / 5
-        print(min_area_thresh)
         if min_area_thresh < 12:
             min_area_thresh = 4
         
