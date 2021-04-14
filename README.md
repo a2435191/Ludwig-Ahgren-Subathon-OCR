@@ -7,7 +7,7 @@
 
 ## Notes
 * This takes a while— even though the streaming and processing are done in separate threads, I only got around 2 frames analyzed per second.
-* For this reason, only a [sample `.csv` file](data.csv) is included in the project. The source is [this vod](https://www.youtube.com/watch?v=UzHtbjtT8hE).
+* For this reason, only a [sample `.csv` file](example_data.csv) is included in the project. The source is [this vod](https://www.youtube.com/watch?v=UzHtbjtT8hE).
 * Pull requests from people with good Internet are always appreciated!
 
 ## TODO
