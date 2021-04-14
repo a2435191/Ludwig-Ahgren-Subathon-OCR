@@ -62,7 +62,7 @@ class LudFrame():
             raise CroppedOcrError
 
         im_size = self.cropped.shape[0] * self.cropped.shape[1]
-        min_area_thresh = (im_size)**0.5 / 2
+        min_area_thresh = (im_size)**0.5 / 5
         print(min_area_thresh)
         if min_area_thresh < 12:
             min_area_thresh = 4
@@ -92,7 +92,7 @@ class LudFrame():
 
         inverted = cv2.bitwise_not(filtered)
         self._write('inverted.png', inverted)
-        string = pytesseract.image_to_string(inverted, 'eng')
+        string = pytesseract.image_to_string(inverted, 'eng', config='-c tessedit_char_whitelist=0123456789:.')
         return string
 
     def update_bbox(
