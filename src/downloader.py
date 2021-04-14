@@ -15,7 +15,7 @@ class LudVideo():
         self.record_ims = record_ims
         self.dest = dest
         self.url = url
-        self._q = Queue()
+        self._q = Queue(100)
         self.get_frames_done = False
 
 
@@ -134,6 +134,6 @@ class LudVideo():
 
 
 if __name__ == '__main__':
-    lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'example_data.csv', record_ims=True)
+    lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'test_data.csv', record_ims=True)
     lv.go()
     
