@@ -164,6 +164,6 @@ if __name__ == '__main__':
     #cap.set(1, 61320-1)
     #_, frame = cap.read()
     print(
-        LudFrame(cv2.imread('tests/test_images/40:13:14.png')).get_ts()
+        LudFrame(cv2.imread('tests/test_images/69:09:34.png')).get_ts()
     )
 
