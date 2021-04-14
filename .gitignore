@@ -1,3 +1,4 @@
 src/__pycache__
 *.csv
 !example_data.csv
+demo_images/*.png
