@@ -1,17 +1,20 @@
 import os
 import time
+import concurrent.futures as cf
 from queue import Queue
-from threading import Thread
+from threading import Thread, Lock
 
 import cv2
 import pafy
 import pandas
+from math import ceil
 
 from image_processing import CroppedOcrError, LudFrame, TimeStringParsingError
 
 
 class LudVideo():
-    def __init__(self, url, dest, start_at_frame=0, record_ims=False):
+    
+    def __init__(self, url, dest, record_ims=False):
         self.record_ims = record_ims
         self.dest = dest
         self.url = url
@@ -21,119 +24,126 @@ class LudVideo():
 
         self.video = pafy.new(self.url)
         self.length = self.video.length
+
         for v in self.video.videostreams:
             if v.dimensions[1] == 360:
                 self.stream = v
                 break
 
-        self.capture = cv2.VideoCapture(self.stream.url)
-        self.prev_frame = start_at_frame
-        if self.prev_frame > 30:
-            self.capture.set(1, (self.prev_frame//30 * 30 + 29))
-        self.fps = self.capture.get(cv2.CAP_PROP_FPS)
+        
+        self.sample_capture = cv2.VideoCapture(self.stream.url)
+        self.fps = self.sample_capture.get(cv2.CAP_PROP_FPS)
+        self.frames = self.fps * self.length
 
         self.df = pandas.read_csv(self.dest, index_col=['vid_url', 'frame'])
-        self.last_frame = None
+
+        self.df_lock = Lock()
 
         
 
         
 
-    def get_frames(self):
-        frames_count = 0
-        total_frames_done = self.prev_frame
-        while True:
-            check = self.capture.grab()
+    def get_frames(self, start_frame, end_frame):
+        frames_num = 0
+        total_frames_count = start_frame
+
+        capture = cv2.VideoCapture(self.stream.url)
+        capture.set(1, start_frame)
+
+        while total_frames_count < end_frame:
+            check = capture.grab()
 
             if not check:
-                self.get_frames_done = True
                 break
                 
-
-            if frames_count == 0:
-                _, frame = self.capture.retrieve()
-                self._q.put((total_frames_done, frame))
-
-
-            frames_count = (frames_count + 1) % self.fps
-            total_frames_done += 1
-            
-
-        self.capture.release()
-        print('done with get_frames')
+            if frames_num == 0:
+                _, frame = capture.retrieve()
+                self._q.put((total_frames_count, frame))
 
 
-    def recalculate_bbox(self, frame=None):
-        if frame is None:
-            frame = self.last_frame
-        if frame is None:
-            return
-        frame.update_bbox()
-        frame.crop()
+            frames_num = (frames_num + 1) % self.fps
+            total_frames_count += 1
+
+        capture.release()
 
 
-    def ocr_frame(self, recurse=False):
-        try:
-            formatted_string = self.last_frame.get_str_from_cropped()
-        except CroppedOcrError:
-            if recurse:
-                return ""
-            self.last_frame.update_bbox()
-            formatted_string = self.ocr_frame(True)
-                
-        return formatted_string
+    def ocr_frame(self, frame):
+        for _ in range(2):
+            try:
+                formatted_string = frame.get_str_from_cropped()
+                return formatted_string
+            except CroppedOcrError:
+                frame.update_bbox()
+ 
+        return ""
 
-    def format_from_str(self, string, recurse=False):
-        try:
-            ts, string = LudFrame.get_timestamp_from_str(string)
-        except TimeStringParsingError:
-            if recurse:
-                return -1, ""
-            self.last_frame.update_bbox()
-            ts, string = self.format_from_str(self.ocr_frame(True), True)
+    def format_from_str(self, frame, string, recurse=False):
+        for _ in range(2):
+            try:
+                ts, string = LudFrame.get_timestamp_from_str(string)
+                return ts, string
+            except TimeStringParsingError:
+                frame.update_bbox()
 
-        return ts, string
+        return -1, ""
 
         
 
-    def process_frames(self):
-        while True:
-            if self.get_frames_done and self._q.empty():
-                break
-            idx, frame = self._q.get(True)
-            print(self._q.qsize())
-            self.last_frame = LudFrame(frame, self.record_ims)
+    def process_frame(self, idx, frame):
+        frame = LudFrame(frame, self.record_ims)
 
-            raw_ocr_string = self.ocr_frame()
-            ts, string = self.format_from_str(raw_ocr_string)
+        raw_ocr_string = self.ocr_frame(frame)
+        ts, string = self.format_from_str(frame, raw_ocr_string)
 
-            raw_seconds = idx / self.fps
-            hour = int(raw_seconds // 3600)
-            seconds = int(raw_seconds % 60)
-            minutes = int((raw_seconds // 60) % 60)
+        raw_seconds = idx / self.fps
+        hour = int(raw_seconds // 3600)
+        seconds = int(raw_seconds % 60)
+        minutes = int((raw_seconds // 60) % 60)
 
+        with self.df_lock:
             self.df.loc[(self.url, idx), :] = [f"{hour:03}:{minutes:02}:{seconds:02}", ts, string]
             self.df.to_csv(self.dest)
 
-            os.system('clear')
-            print((idx // self.fps / self.length) * 100, "pct. complete")
-        print('done with process_frames')
+
+
             
 
 
-    def go(self):
-        self.p_thread = Thread(target=self.process_frames, daemon=True)
-        self.p_thread.start()
+    def go(self, download_workers=3, processing_workers=2):
+        # https://stackoverflow.com/questions/41648103/how-would-i-go-about-using-concurrent-futures-and-queues-for-a-real-time-scenari
+        with cf.ThreadPoolExecutor(max_workers=download_workers+processing_workers) as executor: 
+            
+            counter = 0
+            get_frames_per_fut = ceil(self.frames / download_workers)
+            futs = [
+                executor.submit(
+                    self.get_frames, 
+                    i * get_frames_per_fut, 
+                    (i+1) * get_frames_per_fut
+                ) for i in range(download_workers)
+            ]
+            while futs:
+                done, _ = cf.wait(futs, timeout=0.1, return_when=cf.FIRST_COMPLETED)
+                while not self._q.empty():
+                    idx, frame = self._q.get(True)
+                    if len(futs) <= 2 * (download_workers + processing_workers):
+                        futs.append(executor.submit(self.process_frame, idx, frame))
+                for future in done:
+                    futs.remove(future)
+                    counter += 1
+                os.system('clear')
+                print(f"{counter/self.length} done, len(futs) == {len(futs)}, self._q.qsize() == {self._q.qsize()}")
+                
 
-        self.g_thread = Thread(target=self.get_frames, daemon=True)
-        self.g_thread.start()
 
-        self.p_thread.join()
-        self.g_thread.join()
-        print('done with program')
+
+
+
+
+ 
 
 
 if __name__ == '__main__':
-    lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'test_data.csv', record_ims=True)
-    lv.go()
+    lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'test_data.csv')
+    lv.go(3, 2)
     
