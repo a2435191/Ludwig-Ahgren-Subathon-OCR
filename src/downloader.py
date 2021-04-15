@@ -54,6 +54,7 @@ class LudVideo():
             check = capture.grab()
 
             if not check:
+                print(f'from {start_frame} to {end_frame} is breaking')
                 break
                 
             if frames_num == 0:
@@ -63,7 +64,7 @@ class LudVideo():
 
             frames_num = (frames_num + 1) % self.fps
             total_frames_count += 1
-
+        print(f'from {start_frame} to {end_frame} is completed')
         capture.release()
 
 
@@ -109,41 +110,39 @@ class LudVideo():
             
 
 
-    def go(self, download_workers=3, processing_workers=2):
+    def go(self, download_workers=3, processing_workers=2, offset=0):
         # https://stackoverflow.com/questions/41648103/how-would-i-go-about-using-concurrent-futures-and-queues-for-a-real-time-scenari
         with cf.ThreadPoolExecutor(max_workers=download_workers+processing_workers) as executor: 
             
-            counter = 0
+            counter = offset
             get_frames_per_fut = ceil(self.frames / download_workers)
             futs = [
                 executor.submit(
                     self.get_frames, 
-                    i * get_frames_per_fut, 
+                    (i * get_frames_per_fut + offset) % get_frames_per_fut, 
                     (i+1) * get_frames_per_fut
                 ) for i in range(download_workers)
             ]
             while futs:
-                done, _ = cf.wait(futs, timeout=0.1, return_when=cf.FIRST_COMPLETED)
-                while not self._q.empty():
+                done, _ = cf.wait(futs, timeout=0.5, return_when=cf.FIRST_COMPLETED)
+                while not self._q.empty() and len(futs) < download_workers + processing_workers:       
                     idx, frame = self._q.get(True)
-                    if len(futs) <= 2 * (download_workers + processing_workers):
-                        futs.append(executor.submit(self.process_frame, idx, frame))
+                    futs.append(executor.submit(self.process_frame, idx, frame))
                 for future in done:
                     futs.remove(future)
-                    counter += 1
+                    counter += self.fps
                 os.system('clear')
-                print(f"{counter/self.length} done, len(futs) == {len(futs)}, self._q.qsize() == {self._q.qsize()}")
+                print(f"{counter/self.frames} done, len(futs) == {len(futs)}, self._q.qsize() == {self._q.qsize()}")
+        print('done')
                 
 
-
-
-
-
-
+# started at 9:18
+# 10% at 9:25
+# 38.2% at 9:47
  
 
 
 if __name__ == '__main__':
     lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'test_data.csv')
-    lv.go(3, 2)
+    lv.go(2, 7)
     
