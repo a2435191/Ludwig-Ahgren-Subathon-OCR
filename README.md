@@ -17,6 +17,6 @@
 * Specifically, the program fails when the timer flashes red or there is too much noise around the timer
 * In a similar vein, make 240p (or even 144p) usable.
 * Use literally any other file format than csv
-* More threads/processes— the program is usually *not* bound by network IO
+* ~~More threads/processes— the program is usually *not* bound by network IO~~ IDK if this is actually true, but I have pretty bad Internet. Either way, multithreading is done.
 * Write more tests
 * Add readme/wiki detailing image processing algorithms
