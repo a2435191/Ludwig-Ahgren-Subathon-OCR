@@ -41,8 +41,6 @@ class LudVideo():
 
         
 
-        
-
     def get_frames(self, start_frame, end_frame):
         frames_num = 0
         total_frames_count = start_frame
@@ -105,22 +103,20 @@ class LudVideo():
             self.df.loc[(self.url, idx), :] = [f"{hour:03}:{minutes:02}:{seconds:02}", ts, string]
             self.df.to_csv(self.dest)
 
+ 
 
 
-            
-
-
-    def go(self, download_workers=3, processing_workers=2, offset=0):
+    def go(self, download_workers=3, processing_workers=2, start_frac=0, end_frac=1):
         # https://stackoverflow.com/questions/41648103/how-would-i-go-about-using-concurrent-futures-and-queues-for-a-real-time-scenari
         with cf.ThreadPoolExecutor(max_workers=download_workers+processing_workers) as executor: 
             
-            counter = offset
+            counter = start_frac * self.frames
             get_frames_per_fut = ceil(self.frames / download_workers)
             futs = [
                 executor.submit(
                     self.get_frames, 
-                    (i * get_frames_per_fut + offset) % get_frames_per_fut, 
-                    (i+1) * get_frames_per_fut
+                    int( (i+start_frac) * get_frames_per_fut ), 
+                    int( (i+end_frac)   * get_frames_per_fut )
                 ) for i in range(download_workers)
             ]
             while futs:
@@ -132,17 +128,15 @@ class LudVideo():
                     futs.remove(future)
                     counter += self.fps
                 os.system('clear')
-                print(f"{counter/self.frames} done, len(futs) == {len(futs)}, self._q.qsize() == {self._q.qsize()}")
+                print(
+                    f"{counter/(end_frac*self.frames)} done, \
+                    len(futs) == {len(futs)}, \
+                    self._q.qsize() == {self._q.qsize()}"
+                )
         print('done')
                 
 
-# started at 9:18
-# 10% at 9:25
-# 38.2% at 9:47
- 
-
-
 if __name__ == '__main__':
     lv = LudVideo('https://www.youtube.com/watch?v=UzHtbjtT8hE', 'test_data.csv')
-    lv.go(2, 7)
+    lv.go(3, 7, 0.28)
     
