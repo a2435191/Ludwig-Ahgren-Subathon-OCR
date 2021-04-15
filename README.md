@@ -13,10 +13,10 @@
 ## TODO
 * ~~Unscuff `video_timestamp` column~~
 * Add propper `logging` support
-* Make OCR more reliable— right now it is only 82.4%. This is my first project using OpenCV, so I'd appreciate any help.
+* Make OCR more reliable— right now it is only 60-80%. This is my first project using OpenCV, so I'd appreciate any help.
 * Specifically, the program fails when the timer flashes red or there is too much noise around the timer
-* In a similar vein, make 240p (or even 144p) usable.
+* In a similar vein, make 240p (or even 144p) usable. *Possibly obsolete due to increased speed*
 * Use literally any other file format than csv
-* ~~More threads/processes— the program is usually *not* bound by network IO~~ IDK if this is actually true, but I have pretty bad Internet. Either way, multithreading is done.
+* ~~More threads/processes— the program is usually *not* bound by network IO~~
 * Write more tests
 * Add readme/wiki detailing image processing algorithms
