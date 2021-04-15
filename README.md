@@ -16,7 +16,6 @@
 * Make OCR more reliable— right now it is only 60-80%. This is my first project using OpenCV, so I'd appreciate any help.
 * Specifically, the program fails when the timer flashes red or there is too much noise around the timer
 * In a similar vein, make 240p (or even 144p) usable. *Possibly obsolete due to increased speed*
-* Use literally any other file format than csv
 * ~~More threads/processes— the program is usually *not* bound by network IO~~
 * Write more tests
 * Add readme/wiki detailing image processing algorithms
