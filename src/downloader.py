@@ -2,7 +2,7 @@ import concurrent.futures as cf
 import os
 import sys
 import time
-from math import ceil
+from math import ceil, isclose
 from queue import Queue
 from threading import Lock, Thread
 
@@ -29,17 +29,23 @@ class LudVideo():
         self.video = pafy.new(self.url)
         self.length = self.video.length * (crop_right - crop_left)
         
+        
 
         for v in self.video.videostreams:
-            if v.dimensions[1] == 360:
+            if v.dimensions[1] == 360 and v.extension == 'mp4':
                 self.stream = v
                 break
 
         
         self.sample_capture = cv2.VideoCapture(self.stream.url)
-        self.fps = self.sample_capture.get(cv2.CAP_PROP_FPS)
-        self.frames = self.fps * self.length
 
+        self.total_frames = int(self.sample_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.frames = int(self.total_frames * (crop_right - crop_left))
+        self.frames_offset = self.total_frames * crop_left
+        self.fps = self.sample_capture.get(cv2.CAP_PROP_FPS)
+        self.ms_per_frame = 1000 / self.fps
+        
+    
         self.df = pandas.read_csv(self.dest, index_col=['frame'])
 
         self.df_lock = Lock()
@@ -47,27 +53,31 @@ class LudVideo():
         
 
     def get_frames(self, start_frame, end_frame):
-        frames_num = 0
-        total_frames_count = int(start_frame)
+        frames_completed = 0
 
         capture = cv2.VideoCapture(self.stream.url)
-        capture.set(1, start_frame)
+        capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-        while total_frames_count < end_frame:
+        old_ms = capture.get(cv2.CAP_PROP_POS_MSEC)
+
+        while frames_completed < end_frame - start_frame:
             check = capture.grab()
 
+            
             if not check:
                 break
-                
-            if frames_num == 0:
-                _, frame = capture.retrieve()
-                self._q.put((total_frames_count, frame))
+             
+            
+            if (ms := capture.get(cv2.CAP_PROP_POS_MSEC)) // 1000 != old_ms // 1000: # no more than one queue put every second
+                old_ms = ms
+                if abs(ms % 1000 - 1000) < self.ms_per_frame or abs(ms % 1000) < self.ms_per_frame:
+                    _, frame = capture.retrieve()
+                    self._q.put((int(ms / 1000 * self.fps), frame))
 
-
-            frames_num = int( (frames_num + 1) % self.fps )
-            total_frames_count = int(total_frames_count + 1)
+            frames_completed += 1
 
         capture.release()
+        
 
 
     def ocr_frame(self, frame):
@@ -106,24 +116,30 @@ class LudVideo():
         with self.df_lock:
             self.df.loc[idx, :] = [f"{hour:03}:{minutes:02}:{seconds:02}", ts, string]
             self.df.to_csv(self.dest)
+
+        with self.lines_completed_lock:
+            self.lines_completed += 1
             
 
  
 
 
-    def go(self, download_workers=3, processing_workers=2, start_frac=0, end_frac=1):
+    def go(self, download_workers=3, processing_workers=2, start_frac=0):
 
         # https://stackoverflow.com/questions/41648103/how-would-i-go-about-using-concurrent-futures-and-queues-for-a-real-time-scenari
         with cf.ThreadPoolExecutor(max_workers=download_workers+processing_workers) as executor: 
+            self.lines_completed = self.frames * start_frac / self.fps
+            self.lines_completed_lock = Lock()
+
             start_time = time.time()
-            counter = start_frac * self.frames
-            get_frames_per_fut = ceil(self.frames * (end_frac - start_frac)/ download_workers)
+            
+            get_frames_per_fut = ceil(self.frames * (1 - start_frac) / download_workers)
 
             futs = [
                 executor.submit(
                     self.get_frames, 
-                    int( (i+start_frac) * get_frames_per_fut + self.crop_left) // 30 * 30, 
-                    int( (i+end_frac)   * get_frames_per_fut + self.crop_left) // 30 * 30
+                    int( (i+start_frac) * get_frames_per_fut + self.frames_offset),
+                    int( (i+1         ) * get_frames_per_fut + self.frames_offset)
                 ) for i in range(download_workers)
             ]
             while futs:
@@ -134,15 +150,18 @@ class LudVideo():
                         futs.append(executor.submit(self.process_frame, idx, frame))
                     for future in done:
                         futs.remove(future)
-                        counter += self.fps
-                    os.system('clear')
-                    frac_done = counter/(end_frac*self.frames)
+                        
+                    
+                    with self.lines_completed_lock:
+                        frac_done = self.lines_completed / (self.frames / self.fps)
 
                     elapsed = time.time() - start_time
                     if frac_done != start_frac:
                         time_remaining = round( (1 - frac_done - start_frac) * elapsed / (frac_done - start_frac) / 3600, 5 )
                     else:
                         time_remaining = None
+
+                    os.system('clear')
                     print(
                         f"frac_done == {frac_done},\
                         len(futs) == {len(futs)},\
@@ -155,6 +174,6 @@ class LudVideo():
                 
 
 if __name__ == '__main__':
-    lv = LudVideo('https://www.youtube.com/watch?v=pRygmplZV6M', 'test_data.csv')
-    lv.go(2, 50)
+    lv = LudVideo('https://www.youtube.com/watch?v=pRygmplZV6M', 'test_data2.csv', 0.999, 1)
+    lv.go(1, 10)
 
