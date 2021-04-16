@@ -18,4 +18,5 @@
 * In a similar vein, make 240p (or even 144p) usable. *Possibly obsolete due to increased speed*
 * ~~More threads/processes— the program is usually *not* bound by network IO~~
 * Write more tests
-* Add readme/wiki detailing image processing algorithms
+* Write proper docstrings
+* Add DB support
