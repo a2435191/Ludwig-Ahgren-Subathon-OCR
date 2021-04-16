@@ -39,7 +39,6 @@ class LudVideo():
         self.sample_capture = cv2.VideoCapture(self.stream.url)
         self.fps = self.sample_capture.get(cv2.CAP_PROP_FPS)
         self.frames = self.fps * self.length
-        print(self.frames)
 
         self.df = pandas.read_csv(self.dest, index_col=['frame'])
 
@@ -48,7 +47,6 @@ class LudVideo():
         
 
     def get_frames(self, start_frame, end_frame):
-        print(f'downloading from {start_frame} to {end_frame}')
         frames_num = 0
         total_frames_count = int(start_frame)
 
@@ -58,9 +56,7 @@ class LudVideo():
         while total_frames_count < end_frame:
             check = capture.grab()
 
-
             if not check:
-                print(f'from {start_frame} to {end_frame} is breaking')
                 break
                 
             if frames_num == 0:
@@ -70,7 +66,7 @@ class LudVideo():
 
             frames_num = int( (frames_num + 1) % self.fps )
             total_frames_count = int(total_frames_count + 1)
-        print(f'from {start_frame} to {end_frame} is completed')
+
         capture.release()
 
 
@@ -101,9 +97,6 @@ class LudVideo():
 
         raw_ocr_string = self.ocr_frame(frame)
         ts, string = self.format_from_str(frame, raw_ocr_string)
-        if not ts % 30:
-            raise Exception('bad')
-            sys.exit(1)
 
         raw_seconds = idx / self.fps
         hour = int(raw_seconds // 3600)
@@ -112,7 +105,6 @@ class LudVideo():
 
         with self.df_lock:
             self.df.loc[idx, :] = [f"{hour:03}:{minutes:02}:{seconds:02}", ts, string]
-
             self.df.to_csv(self.dest)
             
 
@@ -134,36 +126,35 @@ class LudVideo():
                     int( (i+end_frac)   * get_frames_per_fut + self.crop_left) // 30 * 30
                 ) for i in range(download_workers)
             ]
-            for i in range(download_workers):
-                print(
-                    int( (i+start_frac) * get_frames_per_fut ), int( (i+end_frac)   * get_frames_per_fut )
-                )
             while futs:
-                done, _ = cf.wait(futs, timeout=1, return_when=cf.FIRST_COMPLETED)
-                while not self._q.empty() and len(futs) < download_workers + processing_workers:       
-                    idx, frame = self._q.get(True)
-                    futs.append(executor.submit(self.process_frame, idx, frame))
-                for future in done:
-                    futs.remove(future)
-                    counter += self.fps
-                os.system('clear')
-                frac_done = counter/(end_frac*self.frames)
+                try:
+                    done, _ = cf.wait(futs, timeout=1, return_when=cf.FIRST_COMPLETED)
+                    while not self._q.empty() and len(futs) < download_workers + processing_workers:       
+                        idx, frame = self._q.get(True)
+                        futs.append(executor.submit(self.process_frame, idx, frame))
+                    for future in done:
+                        futs.remove(future)
+                        counter += self.fps
+                    os.system('clear')
+                    frac_done = counter/(end_frac*self.frames)
 
-                elapsed = time.time() - start_time
-                if frac_done != 0:
-                    time_remaining = round( (1 - frac_done) * elapsed / frac_done / 3600, 5 )
-                else:
-                    time_remaining = None
-                print(
-                    f"frac_done == {frac_done},\
-                    len(futs) == {len(futs)},\
-                    self._q.qsize() == {self._q.qsize()},\
-                    time_remaining == {time_remaining} hours"
-                )
+                    elapsed = time.time() - start_time
+                    if frac_done != start_frac:
+                        time_remaining = round( (1 - frac_done - start_frac) * elapsed / (frac_done - start_frac) / 3600, 5 )
+                    else:
+                        time_remaining = None
+                    print(
+                        f"frac_done == {frac_done},\
+                        len(futs) == {len(futs)},\
+                        self._q.qsize() == {self._q.qsize()},\
+                        time_remaining == {time_remaining} hours"
+                    )
+                except KeyboardInterrupt:
+                    break
         print('done')
                 
 
 if __name__ == '__main__':
     lv = LudVideo('https://www.youtube.com/watch?v=pRygmplZV6M', 'test_data.csv')
-    lv.go(2, 20)
+    lv.go(2, 50)
 
