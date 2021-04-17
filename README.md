@@ -12,11 +12,10 @@
 * See [data/csvs](data/csvs) and [data/images](data/images).
 
 ## TODO
-* [x] Unscuff `video_timestamp` column
+* [x] Unscuff `"video_timestamp"` column
 * [ ] Add proper `logging` support
-* [ ] Make OCR more reliable— right now it is only 60-80%. This is my first project using OpenCV, so I'd appreciate any help.
-* Specifically, the program fails when the timer flashes red or there is too much noise around the timer
-* ~~[ ] In a similar vein, make 240p (or even 144p) usable.~~
+* [ ] Make OCR more reliable— right now it is only 60-80%. Specifically, the program fails when the timer flashes red or there is too much noise around the timer
+* [ ] ~~In a similar vein, make 240p (or even 144p) usable.~~
 * [x] More threads/processes— the program is usually *not* bound by network IO
 * [ ] Write more tests
 * [ ] Write proper docstrings
