@@ -6,8 +6,8 @@
 * This repo uses OpenCV and Tesseract OCR to scan the timer and record these timer values for anyone to use.
 
 ## Notes
-* This takes a while— even though the streaming and processing are done in separate threads, I only got around 2 frames analyzed per second.
-* For this reason, only a [sample `.csv` file](example_data.csv) is included in the project. The source is [this vod](https://www.youtube.com/watch?v=UzHtbjtT8hE).
+* ~~This takes a while— even though the streaming and processing are done in separate threads, I only got around 2 frames analyzed per second.~~ Fixed with more threads! Now I can get ~9 hours of 360p footage (sampled 1/sec)  processed in only 90 minutes!
+* ~~For this reason, only a [sample `.csv` file](example_data.csv) is included in the project. The source is [this vod](https://www.youtube.com/watch?v=UzHtbjtT8hE).~~ See [data/csvs](data/csvs).
 * Pull requests from people with good Internet are always appreciated!
 
 ## TODO
