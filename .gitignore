@@ -4,4 +4,4 @@ src/__pycache__
 demo_images/*.png
 
 # bugreport MWE for https://github.com/opencv/opencv/issues/19924
-mwe.py
+mwe_debug.py
