@@ -2,7 +2,7 @@ import concurrent.futures as cf
 import os
 import sys
 import time
-from math import ceil, isclose
+from math import ceil
 from queue import Queue
 from threading import Lock, Thread
 
@@ -10,12 +10,12 @@ import cv2
 import pafy
 import pandas
 
-from image_processing import CroppedOcrError, LudFrame, TimeStringParsingError
-
+from image_processing import LudFrame, TimeStringParsingError, CroppedOcrError
+from utils import seconds_to_string
 
 class LudVideo():
     
-    def __init__(self, url, dest, crop_left=0, crop_right=1, record_ims=False):
+    def __init__(self, url, dest, min_res=360, crop_left=0, crop_right=1, record_ims=False):
         assert crop_left < crop_right
         self.crop_left  = crop_left
         self.crop_right = crop_right
@@ -32,7 +32,8 @@ class LudVideo():
         
 
         for v in self.video.videostreams:
-            if v.dimensions[1] == 360 and v.extension == 'mp4':
+            # must be mp4: https://github.com/opencv/opencv/issues/19924
+            if v.dimensions[1] == min_res and v.extension == 'mp4':
                 self.stream = v
                 break
 
@@ -108,13 +109,8 @@ class LudVideo():
         raw_ocr_string = self.ocr_frame(frame)
         ts, string = self.format_from_str(frame, raw_ocr_string)
 
-        raw_seconds = idx / self.fps
-        hour = int(raw_seconds // 3600)
-        seconds = int(raw_seconds % 60)
-        minutes = int((raw_seconds // 60) % 60)
-
         with self.df_lock:
-            self.df.loc[idx, :] = [f"{hour:03}:{minutes:02}:{seconds:02}", ts, string]
+            self.df.loc[idx, :] = [seconds_to_string(idx / self.fps), ts, string]
             self.df.to_csv(self.dest)
 
         with self.lines_completed_lock:
@@ -163,10 +159,10 @@ class LudVideo():
 
                     os.system('clear')
                     print(
-                        f"frac_done == {frac_done},\
-                        len(futs) == {len(futs)},\
-                        self._q.qsize() == {self._q.qsize()},\
-                        time_remaining == {time_remaining} hours"
+                        f"""frac_done == {frac_done}, 
+                        len(futs) == {len(futs)}, 
+                        self._q.qsize() == {self._q.qsize()}, 
+                        ETA == {seconds_to_string(time_remaining) if time_remaining is not None else 'N/A'}"""
                     )
                 except KeyboardInterrupt:
                     break
@@ -174,6 +170,6 @@ class LudVideo():
                 
 
 if __name__ == '__main__':
-    lv = LudVideo('https://www.youtube.com/watch?v=pRygmplZV6M', 'test_data2.csv', 0.999, 1)
-    lv.go(1, 10)
+    lv = LudVideo('https://www.youtube.com/watch?v=pRygmplZV6M', 'test_data.csv')
+    lv.go(2, 25)
 
