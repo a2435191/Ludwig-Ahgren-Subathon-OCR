@@ -159,10 +159,10 @@ class LudVideo():
 
                     os.system('clear')
                     print(
-                        f"""frac_done == {frac_done}, 
-                        len(futs) == {len(futs)}, 
-                        self._q.qsize() == {self._q.qsize()}, 
-                        ETA == {seconds_to_string(time_remaining) if time_remaining is not None else 'N/A'}"""
+                        f"""frac_done == {frac_done},\
+                        len(futs) == {len(futs)},\
+                        self._q.qsize() == {self._q.qsize()},\
+                        ETA == {seconds_to_string(time_remaining*3600) if time_remaining is not None else 'N/A'}"""
                     )
                 except KeyboardInterrupt:
                     break
@@ -170,6 +170,6 @@ class LudVideo():
                 
 
 if __name__ == '__main__':
-    lv = LudVideo('https://www.youtube.com/watch?v=pRygmplZV6M', 'test_data.csv')
-    lv.go(2, 25)
+    lv = LudVideo('https://www.youtube.com/watch?v=yBkNpkF_Q9A', 'data/csvs/raw/28.csv', 480)
+    lv.go(3, 25)
 
