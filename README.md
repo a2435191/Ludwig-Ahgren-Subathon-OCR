@@ -8,7 +8,8 @@
 ![29](https://user-images.githubusercontent.com/68962413/115126462-cb512100-9f94-11eb-8264-7c902472504a.png)
 
 ## Notes
-* ~~This takes a while— even though the streaming and processing are done in separate threads, I only got around 2 frames analyzed per second.~~ Fixed with more threads! Now I can get ~9 hours of 360p footage (sampled 1/sec)  processed in only 90 minutes!
+* Samples are 1 / sec. Even with only 50% of successful OCR, this would be more than enough data.
+* Depending on internet, this may take a while. My initial goal was to spend 1 sec real time per 10 seconds of footage processed. Right now it's about 1:8.
 * See [data/csvs](data/csvs) and [data/images](data/images).
 
 ## TODO
