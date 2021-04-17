@@ -1,6 +1,6 @@
 src/__pycache__
 *.csv
-!example_data.csv
+!data/*.csv
 demo_images/*.png
 
 # bugreport MWE for https://github.com/opencv/opencv/issues/19924
