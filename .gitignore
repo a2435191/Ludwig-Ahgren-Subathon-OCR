@@ -2,6 +2,7 @@ src/__pycache__
 *.csv
 !data/csvs/*.csv
 demo_images/*.png
+.DS_Store
 
 # bugreport MWE for https://github.com/opencv/opencv/issues/19924
 mwe_debug.py
