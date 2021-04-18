@@ -10,8 +10,8 @@ import cv2
 import pafy
 import pandas
 
-from image_processing import LudFrame, TimeStringParsingError, CroppedOcrError
-from utils import seconds_to_string
+from src.image_processing import LudFrame, TimeStringParsingError, CroppedOcrError
+from src.utils import seconds_to_string
 
 class LudVideo():
     
@@ -168,8 +168,5 @@ class LudVideo():
                     break
         print('done')
                 
-
-if __name__ == '__main__':
-    lv = LudVideo('https://www.youtube.com/watch?v=yBkNpkF_Q9A', 'data/csvs/raw/28.csv', 480)
-    lv.go(3, 25)
+    
 
