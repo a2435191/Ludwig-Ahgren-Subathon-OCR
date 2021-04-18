@@ -4,11 +4,10 @@ src/__pycache__
 !data/csvs/raw/*.csv
 demo_images/*.png
 .DS_Store
+driver.py
 
 # bugreport MWE for https://github.com/opencv/opencv/issues/19924
-mwe_debug.py
-driver.py
+src/mwe_debug.py
 
 data/clean.ipynb
 data/graph.ipynb
-.ipynb_checkpoints
