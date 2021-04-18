@@ -1,6 +1,7 @@
 src/__pycache__
 *.csv
-!data/csvs/*.csv
+!data/csvs/cleaned/*.csv
+!data/csvs/raw/*.csv
 demo_images/*.png
 .DS_Store
 
