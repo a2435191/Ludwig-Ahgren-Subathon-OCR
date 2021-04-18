@@ -11,5 +11,4 @@ driver.py
 
 data/clean.ipynb
 data/graph.ipynb
-.*
-!.gitignore
+.ipynb_checkpoints
