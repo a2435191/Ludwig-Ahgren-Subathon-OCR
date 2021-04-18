@@ -5,7 +5,7 @@
 * Every time a Twitch viewer donated, an onscreen timer would increase. If the timer ever decremented so far that it reached zero, the subathon would be over.
 * This repo uses OpenCV and Tesseract OCR to scan the timer and record these timer values for anyone to use.
  
-![29](https://user-images.githubusercontent.com/68962413/115126462-cb512100-9f94-11eb-8264-7c902472504a.png)
+![27.png](data/graphs/27.png)
 
 ## Notes
 * Samples are 1 / sec. Even with only 50% of successful OCR, this would be more than enough data.
