@@ -8,12 +8,12 @@
 ![27.png](data/graphs/27.png)
 
 ## Methodology
-# `image_processing.py`
+### `image_processing.py`
 * `update_bbox` finds and updates the bounding box of the timer using a mask to match the background color and Cannny edge detection. This is typically quite fast (< 5 ms), so I call it every frame. This may change in the future.
 * `get_str_from_cropped` OCRs that bbox after applying some filters and removing noise.
 * `get_timestamp_from_str` is a simple regex that converts a time string (`HHH:MM:SS`) into a Unix timestamp.
 
-# `downloader.py`
+### `downloader.py`
 * `get_frames` and `process_frame` push and pop into a work queue, respectively.
 
 ## Notes
