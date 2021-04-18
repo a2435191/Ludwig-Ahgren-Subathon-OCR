@@ -25,5 +25,5 @@
 
 ## Known Issues
 * ETA faulty when `start_frac != 0`
-* Threads aren't synchronized— when `frac_done == 0.36`, one could be 34% done and another 36%. Smarter `frac_done` will fix this.
+* Threads aren't synchronized— e.g. when `frac_done == 0.35`, one could be 34% done and another 36%. Smarter `frac_done` will fix this.
 * Interrupting with ctrl-C usually causes the csv to delete
