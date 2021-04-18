@@ -8,7 +8,7 @@
 ![27.png](data/graphs/27.png)
 
 ## Notes
-* Samples are 1 / sec. Even with only 50% of successful OCR, this would be more than enough data.
+* Samples are 1 / sec. Even if OCR were only 40% successful, this would be more than enough data.
 * Depending on internet, this may take a while. My initial goal was to spend 1 sec real time per 10 seconds of footage processed. Right now it's about 1:8.
 * See [data/csvs](data/csvs) and [data/graphs](data/graphs).
 
