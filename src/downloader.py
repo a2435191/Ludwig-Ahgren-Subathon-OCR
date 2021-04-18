@@ -129,7 +129,7 @@ class LudVideo():
 
             start_time = time.time()
             
-            get_frames_per_fut = ceil(self.frames * (1 - start_frac) / download_workers)
+            get_frames_per_fut = ceil(self.frames / download_workers)
 
             futs = [
                 executor.submit(
