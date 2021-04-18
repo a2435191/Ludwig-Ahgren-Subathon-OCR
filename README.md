@@ -3,9 +3,18 @@
 ## Purpose
 * Ludwig Ahgren, a popular streamer and YouTuber, livestreamed his entire life for around a month between March and April 2021.
 * Every time a Twitch viewer donated, an onscreen timer would increase. If the timer ever decremented so far that it reached zero, the subathon would be over.
-* This repo uses OpenCV and Tesseract OCR to scan the timer and record these timer values for anyone to use.
- 
+* 
+### Example image(s)
 ![27.png](data/graphs/27.png)
+
+## Methodology
+# `image_processing.py`
+* `update_bbox` finds and updates the bounding box of the timer using a mask to match the background color and Cannny edge detection. This is typically quite fast (< 5 ms), so I call it every frame. This may change in the future.
+* `get_str_from_cropped` OCRs that bbox after applying some filters and removing noise.
+* `get_timestamp_from_str` is a simple regex that converts a time string (`HHH:MM:SS`) into a Unix timestamp.
+
+# `downloader.py`
+* `get_frames` and `process_frame` push and pop into a work queue, respectively.
 
 ## Notes
 * Samples are 1 / sec. Even if OCR were only 40% successful, this would be more than enough data.
@@ -20,7 +29,7 @@
 * [x] More threads/processes— the program is usually *not* bound by network IO
 * [ ] Write more tests
 * [ ] Add more data
-* [ ] Write proper docstrings/type hints
+* [ ] Write proper docstrings/type hints. Sphinx?
 * [ ] Add SQL DB support
 * [ ] Automatic load balancing—— PID over length of queue?
 
