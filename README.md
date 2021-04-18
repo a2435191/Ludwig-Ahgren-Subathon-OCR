@@ -3,7 +3,7 @@
 ## Purpose
 * Ludwig Ahgren, a popular streamer and YouTuber, livestreamed his entire life for around a month between March and April 2021.
 * Every time a Twitch viewer donated, an onscreen timer would increase. If the timer ever decremented so far that it reached zero, the subathon would be over.
-* 
+
 ### Example image(s)
 ![27.png](data/graphs/27.png)
 
