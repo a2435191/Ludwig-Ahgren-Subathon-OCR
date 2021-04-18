@@ -19,5 +19,6 @@
 * [ ] ~~In a similar vein, make 240p (or even 144p) usable.~~
 * [x] More threads/processes— the program is usually *not* bound by network IO
 * [ ] Write more tests
-* [ ] Write proper docstrings
+* [ ] Add more data
+* [ ] Write proper docstrings/type hints
 * [ ] Add SQL DB support
