@@ -31,7 +31,7 @@
 * [ ] Add more data
 * [ ] Write proper docstrings/type hints. Sphinx?
 * [ ] Add SQL DB support
-* [ ] Automatic load balancing—— PID over length of queue?
+* [ ] ~~Automatic load balancing—— PID over length of queue?~~
 
 ## Known Issues
 * ETA faulty when `start_frac != 0`
