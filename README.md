@@ -5,7 +5,7 @@
 * Every time a Twitch viewer donated, an onscreen timer would increase. If the timer ever decremented so far that it reached zero, the subathon would be over.
 
 ### Example image(s)
-![27.png](data/graphs/27.png)
+![27.png](data/graphs/all.png)
 
 ## Methodology
 ### `image_processing.py`
